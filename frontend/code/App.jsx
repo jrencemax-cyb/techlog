@@ -10,6 +10,9 @@ function App() {
     description: ''
   });
 
+  const [editingComputer, setEditingComputer] = useState(null);
+  const [editingReport, setEditingReport] = useState(null);
+
   const [message, setMessage] = useState('');
   const [reports, setReports] = useState([]);
   const [computers, setComputers] = useState([]);
@@ -65,7 +68,6 @@ function App() {
     }
   };
 
-  // Search problem reports
   const handleSearchReports = async (e) => {
     e.preventDefault();
 
@@ -81,7 +83,6 @@ function App() {
     }
   };
 
-  // Search computer units
   const handleSearchComputers = async (e) => {
     e.preventDefault();
 
@@ -94,6 +95,114 @@ function App() {
       setComputers(data);
     } catch {
       setMessage('Unable to search computers.');
+    }
+  };
+
+  const handleEditComputer = (computer) => {
+    setEditingComputer({ ...computer });
+  };
+
+  const handleEditReport = (report) => {
+    setEditingReport({ ...report });
+  };
+
+  const handleUpdateComputer = async (e) => {
+    e.preventDefault();
+
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/computers/${editingComputer.id}`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(editingComputer)
+        }
+      );
+
+      const data = await response.json();
+      setMessage(data.message);
+
+      if (response.ok) {
+        setComputers(computers.map((computer) =>
+          computer.id === editingComputer.id ? editingComputer : computer
+        ));
+
+        setEditingComputer(null);
+      }
+    } catch {
+      setMessage('Unable to update computer.');
+    }
+  };
+
+  const handleUpdateReport = async (e) => {
+    e.preventDefault();
+
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/reports/${editingReport.id}`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(editingReport)
+        }
+      );
+
+      const data = await response.json();
+      setMessage(data.message);
+
+      if (response.ok) {
+        setReports(reports.map((report) =>
+          report.id === editingReport.id ? editingReport : report
+        ));
+
+        setEditingReport(null);
+      }
+    } catch {
+      setMessage('Unable to update report.');
+    }
+  };
+
+  const handleDeleteComputer = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this computer?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/computers/${id}`,
+        { method: 'DELETE' }
+      );
+
+      const data = await response.json();
+      setMessage(data.message);
+
+      if (response.ok) {
+        setComputers(computers.filter((computer) => computer.id !== id));
+      }
+    } catch {
+      setMessage('Unable to delete computer.');
+    }
+  };
+
+  const handleDeleteReport = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this report?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/reports/${id}`,
+        { method: 'DELETE' }
+      );
+
+      const data = await response.json();
+      setMessage(data.message);
+
+      if (response.ok) {
+        setReports(reports.filter((report) => report.id !== id));
+      }
+    } catch {
+      setMessage('Unable to delete report.');
     }
   };
 
@@ -125,6 +234,7 @@ function App() {
     setComputers(sortData(computers, column));
   };
 
+  // HTML PART
   return (
     <div className="page">
       <header className="header">
@@ -230,6 +340,74 @@ function App() {
           </button>
         </form>
 
+        {editingReport && (
+          <form className="edit-form" onSubmit={handleUpdateReport}>
+            <h3>Edit Problem Report</h3>
+
+            <input
+              value={editingReport.computer_number}
+              onChange={(e) => setEditingReport({
+                ...editingReport,
+                computer_number: e.target.value
+              })}
+              placeholder="Computer Number"
+              required
+            />
+
+            <select
+              value={editingReport.problem_type}
+              onChange={(e) => setEditingReport({
+                ...editingReport,
+                problem_type: e.target.value
+              })}
+              required
+            >
+              <option value="Hardware">Hardware</option>
+              <option value="Software">Software</option>
+              <option value="Network">Network</option>
+              <option value="Other">Other</option>
+            </select>
+
+            <select
+              value={editingReport.severity}
+              onChange={(e) => setEditingReport({
+                ...editingReport,
+                severity: e.target.value
+              })}
+              required
+            >
+              <option value="Low">Low</option>
+              <option value="Medium">Medium</option>
+              <option value="High">High</option>
+            </select>
+
+            <textarea
+              value={editingReport.description}
+              onChange={(e) => setEditingReport({
+                ...editingReport,
+                description: e.target.value
+              })}
+              placeholder="Description"
+              required
+            />
+
+            <input
+              value={editingReport.status || ''}
+              onChange={(e) => setEditingReport({
+                ...editingReport,
+                status: e.target.value
+              })}
+              placeholder="Status"
+              required
+            />
+
+            <button type="submit">Update</button>
+            <button type="button" onClick={() => setEditingReport(null)}>
+              Cancel
+            </button>
+          </form>
+        )}
+
         <div className="table-container">
           <table>
             <thead>
@@ -252,6 +430,7 @@ function App() {
                     </button>
                   </th>
                 ))}
+                <th>Actions</th>
               </tr>
             </thead>
 
@@ -264,7 +443,15 @@ function App() {
                   <td>{report.severity}</td>
                   <td>{report.description}</td>
                   <td>{report.status}</td>
-                  <td>{new Date(report.date_reported).toLocaleString()}</td>
+                  <td>{report.date_reported}</td>
+                  <td>
+                    <button type="button" onClick={() => handleEditReport(report)}>
+                      Edit
+                    </button>
+                    <button type="button" onClick={() => handleDeleteReport(report.id)}>
+                      Delete
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -295,6 +482,50 @@ function App() {
           </button>
         </form>
 
+        {editingComputer && (
+          <form className="edit-form" onSubmit={handleUpdateComputer}>
+            <h3>Edit Computer Unit</h3>
+
+            <input
+              value={editingComputer.computer_number}
+              onChange={(e) => setEditingComputer({
+                ...editingComputer,
+                computer_number: e.target.value
+              })}
+              placeholder="Computer Number"
+              required
+            />
+
+            <input
+              value={editingComputer.laboratory}
+              onChange={(e) => setEditingComputer({
+                ...editingComputer,
+                laboratory: e.target.value
+              })}
+              placeholder="Laboratory"
+              required
+            />
+
+            <select
+              value={editingComputer.status}
+              onChange={(e) => setEditingComputer({
+                ...editingComputer,
+                status: e.target.value
+              })}
+              required
+            >
+              <option value="Available">Available</option>
+              <option value="Occupied">Occupied</option>
+              <option value="Under Maintenance">Under Maintenance</option>
+            </select>
+
+            <button type="submit">Update</button>
+            <button type="button" onClick={() => setEditingComputer(null)}>
+              Cancel
+            </button>
+          </form>
+        )}
+
         <div className="table-container">
           <table>
             <thead>
@@ -314,6 +545,7 @@ function App() {
                     </button>
                   </th>
                 ))}
+                <th>Actions</th>
               </tr>
             </thead>
 
@@ -324,6 +556,14 @@ function App() {
                   <td>{computer.computer_number}</td>
                   <td>{computer.laboratory}</td>
                   <td>{computer.status}</td>
+                  <td>
+                    <button type="button" onClick={() => handleEditComputer(computer)}>
+                      Edit
+                    </button>
+                    <button type="button" onClick={() => handleDeleteComputer(computer.id)}>
+                      Delete
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>

@@ -96,6 +96,74 @@ app.get('/api/computers/search', (req, res) => {
 });
 
 
+// Update problem report
+app.put('/api/reports/:id', (req, res) => {
+    const { computer_number, problem_type, severity, description, status } = req.body;
+
+    const sql = `
+        UPDATE problem_reports
+        SET computer_number = ?, problem_type = ?, severity = ?, description = ?, status = ?
+        WHERE id = ?
+    `;
+
+    db.query(sql, [computer_number, problem_type, severity, description, status, req.params.id], (err) => {
+        if (err) {
+            return res.status(500).json({ message: 'Failed to update report.' });
+        }
+
+        res.json({ message: 'Report updated successfully!' });
+    });
+});
+
+
+// Delete problem report
+app.delete('/api/reports/:id', (req, res) => {
+    const sql = 'DELETE FROM problem_reports WHERE id = ?';
+
+    db.query(sql, [req.params.id], (err) => {
+        if (err) {
+            return res.status(500).json({ message: 'Failed to delete report.' });
+        }
+
+        res.json({ message: 'Report deleted successfully!' });
+    });
+});
+
+
+// Update computer unit
+app.put('/api/computers/:id', (req, res) => {
+    const { computer_number, laboratory, status } = req.body;
+
+    const sql = `
+        UPDATE computer_units
+        SET computer_number = ?, laboratory = ?, status = ?
+        WHERE id = ?
+    `;
+
+    db.query(sql, [computer_number, laboratory, status, req.params.id], (err) => {
+        if (err) {
+            return res.status(500).json({ message: 'Failed to update computer.' });
+        }
+
+        res.json({ message: 'Computer updated successfully!' });
+    });
+});
+
+
+// Delete computer unit
+app.delete('/api/computers/:id', (req, res) => {
+    const sql = 'DELETE FROM computer_units WHERE id = ?';
+
+    db.query(sql, [req.params.id], (err) => {
+        if (err) {
+            return res.status(500).json({ message: 'Failed to delete computer.' });
+        }
+
+        res.json({ message: 'Computer deleted successfully!' });
+    });
+});
+
+
 
 app.listen(5000, () => {
     console.log('TechLog server running on http://localhost:5000');
